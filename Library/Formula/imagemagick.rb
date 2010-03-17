@@ -14,8 +14,8 @@ def x11?
 end
 
 class Imagemagick <Formula
-  @url='http://image_magick.veidrodis.com/image_magick/ImageMagick-6.5.9-3.tar.bz2'
-  @md5='052fee2a6f1d5fb67664c67b2489be91'
+  @url='http://image_magick.veidrodis.com/image_magick/ImageMagick-6.5.9-8.tar.bz2'
+  @md5='89892e250e81fad51b4b2a1f816987e6'
   @homepage='http://www.imagemagick.org'
 
 
@@ -25,6 +25,7 @@ class Imagemagick <Formula
   depends_on 'little-cms' => :optional
   depends_on 'jasper' => :optional
   depends_on 'ghostscript' => :recommended if ghostscript_srsly? and x11?
+  depends_on 'libpng' unless x11?
 
   def skip_clean? path
     path.extname == '.la'
@@ -64,9 +65,9 @@ class Imagemagick <Formula
     system "make install"
 
     # We already copy these into the keg root
-    (share+'ImageMagick'+'NEWS.txt').unlink
-    (share+'ImageMagick'+'LICENSE').unlink
-    (share+'ImageMagick'+'ChangeLog').unlink
+    (share+"ImageMagick/NEWS.txt").unlink
+    (share+"ImageMagick/LICENSE").unlink
+    (share+"ImageMagick/ChangeLog").unlink
   end
 
   def caveats
