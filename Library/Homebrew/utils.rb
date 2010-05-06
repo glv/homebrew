@@ -130,7 +130,7 @@ def gzip path
   return Pathname.new(path+".gz")
 end
 
-# returns array of architectures suitable for -arch gcc flag
+# Returns array of architectures that the given command is built for.
 def archs_for_command cmd
   cmd = cmd.to_s # If we were passed a Pathname, turn it into a string.
   cmd = `/usr/bin/which #{cmd}` unless Pathname.new(cmd).absolute?
@@ -211,5 +211,14 @@ def nostdout
     ensure
       $stdout = real_stdout
     end
+  end
+end
+
+def dump_build_env env
+  puts "\"--use-llvm\" was specified" if ARGV.include? '--use-llvm'
+
+  %w[CC CXX LD CFLAGS CXXFLAGS CPPFLAGS LDFLAGS MACOSX_DEPLOYMENT_TARGET MAKEFLAGS PATH PKG_CONFIG_PATH HOMEBREW_USE_LLVM].each do |k|
+    value = env[k]
+    puts "#{k}: #{value}" if value
   end
 end
