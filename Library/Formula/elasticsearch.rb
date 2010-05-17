@@ -1,9 +1,9 @@
 require 'formula'
 
 class Elasticsearch < Formula
-  url 'http://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-0.5.1.zip'
+  url 'http://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-0.7.0.zip'
   homepage 'http://www.elasticsearch.com'
-  md5 'c438c0d18bef8d2efd2d801fa872a3fa'
+  md5 '6f71e1306d7fba1b1fc1c3d48641feb9'
 
   def install
     FileUtils.rm_f Dir["bin/*.bat"]
