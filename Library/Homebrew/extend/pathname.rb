@@ -146,6 +146,10 @@ class Pathname
     /-((\d+\.)+\d+[abc]?)[-.](bin|stable|src|sources?)$/.match stem
     return $1 if $1
 
+    # Debian style eg dash_0.5.5.1.orig.tar.gz
+    /_((\d+\.)+\d+[abc]?)[.]orig$/.match stem
+    return $1 if $1
+
     # eg. otp_src_R13B (this is erlang's style)
     # eg. astyle_1.23_macosx.tar.gz
     stem.scan /_([^_]+)/ do |match|
@@ -191,6 +195,34 @@ class Pathname
   def subdirs
     children.select{ |child| child.directory? }
   end
+
+  def resolved_path
+    self.symlink? ? dirname+readlink : self
+  end
+
+  def resolved_path_exists?
+    (dirname+readlink).exist?
+  end
+
+  def starts_with? prefix
+    prefix = prefix.to_s
+    self.to_s[0, prefix.length] == prefix
+  end
+
+  def make_relative_symlink src
+    self.dirname.mkpath
+    Dir.chdir self.dirname do
+      # TODO use Ruby function so we get exceptions
+      # NOTE Ruby functions may work, but I had a lot of problems
+      rv=system 'ln', '-sf', src.relative_path_from(self.dirname)
+      unless rv and $? == 0
+        raise <<-EOS
+Could not create symlink #{to_s}.
+Check that you have permssions on #{self.dirname}
+        EOS
+      end
+    end
+  end
 end
 
 # sets $n and $d so you can observe creation of stuff
@@ -205,24 +237,15 @@ module ObserverPathnameExtension
     puts "rmdir #{to_s}" if ARGV.verbose?
     $d+=1
   end
-  def resolved_path_exists?
-    (dirname+readlink).exist?
-  end
   def mkpath
     super
     puts "mkpath #{to_s}" if ARGV.verbose?
     $d+=1
   end
   def make_relative_symlink src
-    dirname.mkpath
-    Dir.chdir dirname do
-      # TODO use Ruby function so we get exceptions
-      # NOTE Ruby functions may work, but I had a lot of problems
-      rv=system 'ln', '-sf', src.relative_path_from(dirname)
-      raise "Could not create symlink #{to_s}" unless rv and $? == 0
-      puts "ln #{to_s}" if ARGV.verbose?
-      $n+=1
-    end
+    super
+    puts "ln #{to_s}" if ARGV.verbose?
+    $n+=1
   end
 end
 
