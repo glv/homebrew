@@ -1,6 +1,12 @@
 # some credit to http://github.com/maddox/magick-installer
 require 'formula'
 
+class UnsafeSvn <SubversionDownloadStrategy
+  def _fetch_command svncommand, url, target
+    [svn, '--non-interactive', '--trust-server-cert', svncommand, '--force', url, target]
+  end
+end
+
 def ghostscript_srsly?
   ARGV.include? '--with-ghostscript'
 end
@@ -13,6 +19,10 @@ def use_wmf?
   ARGV.include? '--use-wmf'
 end
 
+def disable_openmp?
+  ARGV.include? '--disable-openmp'
+end
+
 def x11?
   # I used this file because old Xcode seems to lack it, and its that old
   # Xcode that loads of people seem to have installed still
@@ -20,9 +30,13 @@ def x11?
 end
 
 class Imagemagick <Formula
-  url 'ftp://ftp.imagemagick.org/pub/ImageMagick/ImageMagick-6.6.3-6.tar.bz2'
-  md5 'b4f468b427ad615cfb0fdb4cfcd50743'
+  url 'https://www.imagemagick.org/subversion/ImageMagick/trunk',
+        :using => UnsafeSvn, :revision => '2715'
+  version '6.6.4-5'
   homepage 'http://www.imagemagick.org'
+
+  head 'https://www.imagemagick.org/subversion/ImageMagick/trunk',
+        :using => UnsafeSvn
 
   depends_on 'jpeg'
   depends_on 'libpng' unless x11?
@@ -43,7 +57,8 @@ class Imagemagick <Formula
   def options
     [
       ['--with-ghostscript', 'Compile against ghostscript (not recommended.)'],
-      ['--use-wmf', 'Compile with libwmf support.']
+      ['--use-wmf', 'Compile with libwmf support.'],
+      ['--disable-openmp', 'Disable OpenMP.']
     ]
   end
 
@@ -60,7 +75,7 @@ class Imagemagick <Formula
              "--with-modules",
              "--without-magick-plus-plus" ]
 
-    args << "--disable-openmp" if MACOS_VERSION < 10.6 # libgomp unavailable
+    args << "--disable-openmp" if MACOS_VERSION < 10.6 or disable_openmp?
     args << "--without-gslib" unless ghostscript_srsly?
     args << "--with-gs-font-dir=#{HOMEBREW_PREFIX}/share/ghostscript/fonts" \
                 unless ghostscript_srsly? or ghostscript_fonts?
@@ -75,11 +90,27 @@ class Imagemagick <Formula
   end
 
   def caveats
-    s = ""
-    s += "You don't have X11 from the Xcode DMG installed. Consequently Imagemagick is less fully featured.\n" unless x11?
-    s += "Some tools will complain if the ghostscript fonts are not installed in:\n\t#{HOMEBREW_PREFIX}/share/ghostscript/fonts\n" \
-            unless ghostscript_fonts? or ghostscript_srsly?
-    return nil if s.empty?
+    s = <<-EOS.undent
+    Because ImageMagick likes to remove tarballs, we're downloading their
+    stable release from their SVN repo instead. But they only serve the
+    repo over HTTPS, and have an untrusted certificate, so we auto-accept
+    this certificate for you.
+
+    If this bothers you, open a ticket with ImageMagick to fix their cert.
+
+    EOS
+    unless x11?
+      s += <<-EOS.undent
+      You don't have X11 from the Xcode DMG installed. Consequently Imagemagick is less fully featured.
+
+      EOS
+    end
+    unless ghostscript_fonts? or ghostscript_srsly?
+      s += <<-EOS.undent
+      Some tools will complain if the ghostscript fonts are not installed in:
+        #{HOMEBREW_PREFIX}/share/ghostscript/fonts
+      EOS
+    end
     return s
   end
 
