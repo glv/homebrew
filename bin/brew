@@ -41,6 +41,7 @@ end
 def dump_config
   require 'hardware'
   sha = `cd #{HOMEBREW_REPOSITORY} && git rev-parse --verify HEAD 2> /dev/null`.chomp
+  sha = "(none)" if sha.empty?
   bits = Hardware.bits
   cores = Hardware.cores_as_words
   kernel_arch = `uname -m`.chomp
@@ -80,13 +81,13 @@ begin
     if ARGV.named.empty?
       puts HOMEBREW_CACHE
     else
-      puts *ARGV.formulae.collect {|f| f.cached_download rescue '(built from source control)'}
+      puts ARGV.formulae.collect {|f| f.cached_download}
     end
   when '--prefix'
     if ARGV.named.empty?
       puts HOMEBREW_PREFIX
     else
-      puts *ARGV.formulae.collect {|f| f.prefix}
+      puts ARGV.formulae.collect {|f| f.prefix}
     end
   when '--repository'
     puts HOMEBREW_REPOSITORY
@@ -94,7 +95,7 @@ begin
     if ARGV.named.empty?
       puts HOMEBREW_CELLAR
     else
-      puts *ARGV.formulae.collect {|f| HOMEBREW_CELLAR+f.name}
+      puts ARGV.formulae.collect {|f| HOMEBREW_CELLAR+f.name}
     end
   when '--config'
     dump_config
@@ -166,7 +167,7 @@ begin
             path
           end
         end
-        exec_editor *paths
+        exec_editor(*paths)
       end
 
   when 'up', 'update'
@@ -187,10 +188,30 @@ begin
       ARGV.kegs.each {|keg| puts "#{keg.unlink} links removed for #{keg}"}
 
     when 'rm', 'uninstall', 'remove'
-      ARGV.kegs.each do |keg|
-        puts "Uninstalling #{keg}..."
-        keg.unlink
-        keg.uninstall
+      if ARGV.flag? "--force"
+        require 'formula'
+        ARGV.formulae.each do |f|
+          formula_cellar = f.prefix.parent
+          next unless File.exist? formula_cellar
+          puts "Uninstalling #{f.name}..."
+          formula_cellar.children do |k|
+            keg = Keg.new(k)
+            keg.unlink
+          end
+
+          formula_cellar.rmtree
+        end
+      else
+        begin
+          ARGV.kegs.each do |keg|
+            puts "Uninstalling #{keg}..."
+            keg.unlink
+            keg.uninstall
+          end
+        rescue MultipleVersionsInstalledError => e
+          onoe e
+          puts "Use `brew remove --force #{e.name}` to remove all versions."
+        end
       end
 
     when 'prune'
@@ -204,7 +225,7 @@ begin
       elsif ARGV.named.empty?
         raise UsageError
       else
-        exec_editor *ARGV.named.collect {|name| make name}
+        exec_editor(*ARGV.named.collect {|name| make name})
       end
 
     when 'diy', 'configure'
@@ -256,15 +277,17 @@ begin
   when 'log'
     Dir.chdir HOMEBREW_REPOSITORY
     args = ARGV.options_only
-    args += ARGV.formulae.map{ |formula| formula.path }
+    args += ARGV.formulae.map{ |formula| formula.path } unless ARGV.named.empty?
     exec "git", "log", *args
 
   # For each formula given, show which other formulas depend on it.
   # We only go one level up, ie. direct dependencies.
   when 'uses'
     uses = ARGV.formulae.map{ |f| Formula.all.select{ |ff| ff.deps.include? f.name }.map{|f| f.name} }.flatten.uniq
-    uses = uses.select { |f| Formula.factory(f).installed? } if ARGV.include? "--installed"
-    puts *uses.sort
+    if ARGV.include? "--installed"
+      uses = uses.select { |f| f = HOMEBREW_CELLAR+f; f.directory? and not f.subdirs.empty? }
+    end
+    puts uses.sort
 
   when 'deps'
     if ARGV.include?('--all')
@@ -273,10 +296,10 @@ begin
         puts "#{f.name}:#{f.deps.join(' ')}"
       end
     elsif ARGV.include?("-1") or ARGV.include?("--1")
-      puts *ARGV.formulae.map{ |f| f.deps or [] }.flatten.uniq.sort
+      puts ARGV.formulae.map {|f| f.deps or []}.flatten.uniq.sort
     else
       require 'formula_installer'
-      puts *ARGV.formulae.map{ |f| FormulaInstaller.expand_deps(f).map{|f| f.name} }.flatten.uniq.sort
+      puts ARGV.formulae.map {|f| FormulaInstaller.expand_deps(f).map {|f| f.name} }.flatten.uniq.sort
     end
 
   when 'cat'
