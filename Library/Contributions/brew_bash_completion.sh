@@ -9,9 +9,9 @@ _brew_to_completion()
 
     # Subcommand list
     [[ ${COMP_CWORD} -eq 1 ]] && {
-        local actions="--cache --config --prefix audit cat cleanup configure create
-            deps doctor edit home info install link list log outdated prune
-            remove search unlink update uses"
+        local actions="--cache --cellar --config --env --prefix --repository audit cat cleanup
+            configure create deps doctor edit fetch help home info install link list log options
+            outdated prune remove search test uninstall unlink update uses"
         local ext=$(\ls $(brew --repository)/Library/Contributions/examples |
                     sed -e "s/\.rb//g" -e "s/brew-//g")
         COMPREPLY=( $(compgen -W "${actions} ${ext}" -- ${cur}) )
@@ -32,7 +32,7 @@ _brew_to_completion()
         # handle standard --options
         if [[ "$prev" == "install" && "$cur" == --* ]]; then
             local opts=$(
-                local opts=( --force --verbose --debug --use-gcc --use-llvm --ignore-dependencies --HEAD )
+                local opts=( --force --verbose --debug --use-clang --use-gcc --use-llvm --ignore-dependencies --HEAD )
                 for o in ${opts[*]}; do
                     [[ " ${COMP_WORDS[*]} " =~ " $o " ]] || echo "$o"
                 done

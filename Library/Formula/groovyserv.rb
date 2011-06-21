@@ -2,8 +2,8 @@ require 'formula'
 
 class Groovyserv < Formula
   homepage 'http://kobo.github.com/groovyserv/'
-  url 'https://github.com/downloads/kobo/groovyserv/groovyserv-0.6-src.zip'
-  sha1 '5a812e9dfaa1aa0d6a769bd5c6ccbcefb970f135'
+  url 'https://github.com/downloads/kobo/groovyserv/groovyserv-0.8_src.zip'
+  sha1 '0b934c76d2bc71f0661dbcc36ef83dc33938051c'
   head 'http://github.com/kobo/groovyserv.git', :using => :git
 
   depends_on 'groovy'
