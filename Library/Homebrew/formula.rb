@@ -156,6 +156,11 @@ class Formula
    ARGV.formulae.include? self
   end
 
+  def linked_keg
+    keg = Pathname.new(HOMEBREW_REPOSITORY/"Library/LinkedKegs"/@name)
+    if keg.exist? then Keg.new(keg.realpath) else nil end
+  end
+
   def installed_prefix
     head_prefix = HOMEBREW_CELLAR+@name+'HEAD'
     if @version == 'HEAD' || head_prefix.directory?
@@ -329,14 +334,18 @@ class Formula
   end
 
   def handle_llvm_failure llvm
-    case ENV.compiler
-    when :llvm, :clang
-      # version 2335 is the latest version as of Xcode 4.1, so it is the
+    if ENV.compiler == :llvm
+      # version 2336 is the latest version as of Xcode 4.2, so it is the
       # latest version we have tested against so we will switch to GCC and
-      # bump this integer when Xcode 4.2 is released. TODO do that!
-      if llvm.build.to_i >= 2335
-        opoo "Formula will not build with LLVM, using GCC"
-        ENV.gcc :force => true
+      # bump this integer when Xcode 4.3 is released. TODO do that!
+      if llvm.build.to_i >= 2336
+        if MacOS.xcode_version < "4.2"
+          opoo "Formula will not build with LLVM, using GCC"
+          ENV.gcc :force => true
+        else
+          opoo "Formula will not build with LLVM, trying Clang"
+          ENV.clang :force => true
+        end
         return
       end
       opoo "Building with LLVM, but this formula is reported to not work with LLVM:"
@@ -398,6 +407,9 @@ class Formula
   end
 
   def self.canonical_name name
+    # Cast pathnames to strings.
+    name = name.to_s if name.kind_of? Pathname
+
     formula_with_that_name = HOMEBREW_REPOSITORY+"Library/Formula/#{name}.rb"
     possible_alias = HOMEBREW_REPOSITORY+"Library/Aliases/#{name}"
     possible_cached_formula = HOMEBREW_CACHE_FORMULA+"#{name}.rb"
