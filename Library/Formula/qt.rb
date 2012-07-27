@@ -2,18 +2,20 @@ require 'formula'
 
 class Qt < Formula
   homepage 'http://qt.nokia.com/'
-  url 'http://get.qt.nokia.com/qt/source/qt-everywhere-opensource-src-4.8.1.tar.gz'
-  md5 '7960ba8e18ca31f0c6e4895a312f92ff'
+  url 'http://releases.qt-project.org/qt4/source/qt-everywhere-opensource-src-4.8.2.tar.gz'
+  md5 '3c1146ddf56247e16782f96910a8423b'
 
   bottle do
-    sha1 '6913b065d9e4647e4389269012bf9c7fe13dd726' => :snowleopard
-    sha1 'd523bfbc1c7e50cdd10b64b1b10db187ec7e7c2b' => :lion
+    version 1
+    sha1 'dfa0daa951e889a2548b1cff66759b449b5a6b98' => :mountainlion
+    sha1 '0905eb8b2c5a9bae0d1f9a8234173daba680c48c' => :lion
+    sha1 'c37ac19d54c4684d8996a0ee96cdf971bd2c1f7b' => :snowleopard
   end
 
   head 'git://gitorious.org/qt/qt.git', :branch => 'master'
 
   fails_with :clang do
-    build 318
+    build 421
   end
 
   def options
@@ -23,23 +25,42 @@ class Qt < Formula
       ['--with-demos-examples', "Enable Qt demos and examples."],
       ['--with-debug-and-release', "Compile Qt in debug and release mode."],
       ['--universal', "Build both x86_64 and x86 architectures."],
+      ['--developer', 'Compile and link Qt with Qt developer options']
     ]
   end
 
   depends_on "d-bus" if ARGV.include? '--with-qtdbus'
   depends_on 'sqlite' if MacOS.leopard?
 
+  def patches
+    # fixes conflict on osx 10.5. See qt bug:
+    # https://bugreports.qt-project.org/browse/QTBUG-23258
+    if MacOS.leopard?
+      "http://bugreports.qt-project.org/secure/attachment/26712/Patch-Qt-4.8-for-10.5"
+    # add support for Mountain Lion
+    # gist submitted upstream here: https://codereview.qt-project.org/#change,31646
+    elsif MacOS.mountain_lion?
+      [ "https://qt.gitorious.org/qt/qt/commit/422f1b?format=patch",
+        "https://qt.gitorious.org/qt/qt/commit/665355?format=patch",
+        "https://raw.github.com/gist/3187034/893252db0ae3bb9bb5fa3ff7c530c7978399b101/0001-Fix-WebKit-on-OS-X-Mountain-Lion.patch" ]
+    end
+
+  end
+
   def install
-    ENV.x11
+    # Apply binary git patch; normal patch ignores this.
+    # TODO: Autodetect binary patches and apply them correctly.
+    system "git apply --exclude=*/QtWebKit.pro 002-homebrew.diff" if MacOS.mountain_lion?
+
     ENV.append "CXXFLAGS", "-fvisibility=hidden"
     args = ["-prefix", prefix,
-            "-system-libpng", "-system-zlib",
-            "-L/usr/X11/lib", "-I/usr/X11/include",
+            "-system-zlib",
             "-confirm-license", "-opensource",
             "-cocoa", "-fast" ]
 
     # See: https://github.com/mxcl/homebrew/issues/issue/744
     args << "-system-sqlite" if MacOS.leopard?
+
     args << "-plugin-sql-mysql" if (HOMEBREW_CELLAR+"mysql").directory?
 
     if ARGV.include? '--with-qtdbus'
@@ -74,8 +95,10 @@ class Qt < Formula
       args << "-release"
     end
 
+    args << '-developer-build' if ARGV.include? '--developer'
+
     # Needed for Qt 4.8.1 due to attempting to link moc with gcc.
-    ENV['LD'] = ENV['CXX']
+    ENV['LD'] = ENV.cxx
 
     system "./configure", *args
     system "make"
@@ -112,7 +135,7 @@ class Qt < Formula
   end
 
   def test
-    "#{bin}/qmake --version"
+    system "#{bin}/qmake", "--version"
   end
 
   def caveats; <<-EOS.undent

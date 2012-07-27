@@ -91,7 +91,7 @@ class Test
     begin
       Formula.factory arg
     rescue FormulaUnavailableError
-      ofail "#{arg} is not a pull request number or formula." unless arg.to_i > 0
+      odie "#{arg} is not a pull request number or formula." unless arg.to_i > 0
       @url = arg
       @formulae = []
     else
@@ -108,7 +108,7 @@ class Test
 
     if ARGV.include? "--html" and not @@css
       require 'erb'
-      root = HOMEBREW_CONTRIBUTED_CMDS
+      root = HOMEBREW_CONTRIBUTED_CMDS/"brew-test-bot"
       @@css = IO.read root + "brew-test-bot.css"
       @@index_html = ERB.new IO.read root + "brew-test-bot.index.html.erb"
       @@commit_html = ERB.new IO.read root + "brew-test-bot.commit.html.erb"
@@ -214,7 +214,7 @@ class Test
       test "git clean --force -dx"
     else
       `git diff --exit-code HEAD 2>/dev/null`
-      ofail "Uncommitted changes, aborting." unless $?.success?
+      odie "Uncommitted changes, aborting." unless $?.success?
       test "git reset --hard #{@start_sha1}" if @start_sha1
     end
   end
@@ -267,7 +267,7 @@ class Test
 end
 
 if ARGV.empty?
-  ofail 'This command requires at least one argument containing a pull request number or formula.'
+  odie 'This command requires at least one argument containing a pull request number or formula.'
 end
 
 Dir.chdir HOMEBREW_REPOSITORY

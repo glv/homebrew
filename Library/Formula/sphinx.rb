@@ -21,15 +21,10 @@ class Sphinx < Formula
   end
 
   fails_with :clang do
-    build 318
+    build 421
     cause <<-EOS.undent
-      configure: error: Gcc version error. Minspec is 3.4
-      http://sphinxsearch.com/bugs/view.php?id=1123
-
-      sphinxexpr.cpp:1799:11: error: use of undeclared identifier 'ExprEval'
-      https://github.com/mxcl/homebrew/issues/10016
-      https://github.com/mxcl/homebrew/pull/10698
-      EOS
+      sphinxexpr.cpp:1802:11: error: use of undeclared identifier 'ExprEval'
+    EOS
   end
 
   def options
@@ -40,13 +35,11 @@ class Sphinx < Formula
   end
 
   def install
-    lstem = Pathname.pwd+'libstemmer_c'
-    Libstemmer.new.brew { lstem.install Dir['*'] }
+    Libstemmer.new.brew { (buildpath/'libstemmer_c').install Dir['*'] }
 
-    args = ["--prefix=#{prefix}",
-            "--disable-debug",
-            "--disable-dependency-tracking",
-            "--localstatedir=#{var}"]
+    args = %W[--prefix=#{prefix}
+              --disable-dependency-tracking
+              --localstatedir=#{var}]
 
     # always build with libstemmer support
     args << "--with-libstemmer"
