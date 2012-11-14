@@ -4,22 +4,18 @@ class PerforceProxy < Formula
   homepage 'http://www.perforce.com/'
 
   if MacOS.prefer_64_bit?
-    url 'http://filehost.perforce.com/perforce/r12.1/bin.darwin90x86_64/p4p'
-    md5 '0b35652a8a0d51021ed88a81acb84448'
-    version '2012.1.459601-x86_64'
+    url 'http://filehost.perforce.com/perforce/r12.2/bin.darwin90x86_64/p4p'
+    version '2012.2.551823-x86_64'
+    sha1 '7acece4dfafa72df8f71138b9e9965fe241dfa35'
   else
-    url 'http://filehost.perforce.com/perforce/r12.1/bin.darwin90x86/p4p'
-    md5 '745bacd461d69b4f441a6f14adedec28'
-    version '2012.1.459601-x86'
+    url 'http://filehost.perforce.com/perforce/r12.2/bin.darwin90x86/p4p'
+    version '2012.2.551823-x86'
+    sha1 '8161e83bc4c55061bd73876331823c2f8e44da8e'
   end
 
   def install
     sbin.install 'p4p'
-
     (var+"p4p").mkpath
-
-    plist_path.write startup_plist
-    plist_path.chmod 0644
   end
 
   def caveats; <<-EOS.undent

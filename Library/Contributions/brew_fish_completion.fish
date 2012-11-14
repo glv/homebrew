@@ -6,7 +6,7 @@
 #   ln -s (brew --prefix)/Library/Contributions/brew_fish_completion.fish
 #     ~/.config/fish/completions/brew.fish
 
-for command in (ls (brew --repository)/Library/Homebrew/cmd | sed s/\.rb//)
+for command in (ls (brew --repository)/Library/Homebrew/cmd | sed -e "s/\.rb//g")
   set commands $command $commands
 end
 
@@ -86,6 +86,20 @@ function __fish_complete_brew_no_command
   return 0
 end
 
+function __fish_brew_formula_arguments
+  set formulae (ls (brew --repository)/Library/Formula 2>/dev/null | sed 's/\.rb//g')
+  for formula in (ls (brew --repository)/Library/Aliases 2>/dev/null | sed 's/\.rb//g')
+    set formulae $formula $formulae
+  end
+
+  for cmd in (commandline -opc)
+    if contains -- $cmd $formulae
+      brew options $cmd --compact | tr ' ' '\n'
+    end
+  end
+end
+
+complete -c brew --arguments '(__fish_brew_formula_arguments)'
 complete -c brew -x -a "$commands" -n '__fish_complete_brew_no_command'
 complete -c brew -x -a '(__fish_complete_brew_argument)' -n '__fish_complete_brew_has_command'
 
@@ -154,9 +168,5 @@ complete -c brew -l rebase -n '__fish_complete_brew_command update' -d "Use git 
 complete -c brew -l installed -n '__fish_complete_brew_command uses' -d "Only list installed formulae"
 
 complete -c brew -l compact -n '__fish_complete_brew_command versions' -d "Show all versions on a single line"
-
-complete -c brew -l prefix  -n '__fish_complete_brew_no_command'
-complete -c brew -l version -n '__fish_complete_brew_no_command'
-complete -c brew -l cache   -n '__fish_complete_brew_no_command'
 
 complete -c brew -s v -l verbose -d "Print extra debugging information"

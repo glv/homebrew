@@ -18,33 +18,16 @@ end
 
 class Cmake < Formula
   homepage 'http://www.cmake.org/'
-  url 'http://www.cmake.org/files/v2.8/cmake-2.8.8.tar.gz'
-  sha1 'a74dfc3e0a0d7f857ac5dda03bb99ebf07676da1'
+  url 'http://www.cmake.org/files/v2.8/cmake-2.8.10.1.tar.gz'
+  sha1 'ff536d0592a0433ef3610f1861886712b99979a5'
 
   bottle do
-    version 3
-    sha1 '64e1a488bc669f7676c99874b8496ac147d1bc70' => :mountainlion
-    sha1 'bdfb5fcd6743d65f6cfe00b314f9d3f1049e902b' => :lion
-    sha1 '3a77fc17a7b1d3cceabddcca5c126c6b911c2f90' => :snowleopard
+    sha1 '1a43a9a7f05216c9dc2458bca6aaa80c4a6cfc5b' => :mountainlion
+    sha1 '31856bbd662ca47c325761fc7040e43f9a635c64' => :lion
+    sha1 'ff80d9bb064fcec2e268896ede95532f99c6cfb6' => :snowleopard
   end
 
   depends_on NoExpatFramework.new
-
-  def options
-    [["--enable-ninja", "Enable Ninja build system support"]]
-  end
-
-  def patches
-    [
-      # Correct FindPkgConfig found variable. Remove for CMake 2.8.9.
-      "https://github.com/Kitware/CMake/commit/3ea850.patch",
-      # Workaround DeployQt4 issue. Remove for CMake 2.8.9.
-      "https://github.com/Kitware/CMake/commit/374b9b.patch",
-      # Protect the default value of CMAKE_FIND_FRAMEWORK so that it can be
-      # overridden from the command line. Remove for CMake 2.8.9.
-      "https://github.com/Kitware/CMake/commit/8b2fb3.patch"
-    ]
-  end
 
   def install
     args = %W[
@@ -55,11 +38,6 @@ class Cmake < Formula
       --docdir=/share/doc/cmake
       --mandir=/share/man
     ]
-
-    if ARGV.include? "--enable-ninja"
-      args << "--"
-      args << "-DCMAKE_ENABLE_NINJA=1"
-    end
 
     system "./bootstrap", *args
     system "make"
