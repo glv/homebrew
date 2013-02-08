@@ -2,8 +2,8 @@ require 'formula'
 
 class Mercurial < Formula
   homepage 'http://mercurial.selenic.com/'
-  url 'http://mercurial.selenic.com/release/mercurial-2.3.1.tar.gz'
-  sha1 '59e42fd0aebabe8ec9bd59ca6a41416032f7ca48'
+  url 'http://mercurial.selenic.com/release/mercurial-2.5.tar.gz'
+  sha1 '21800a6355fadd67ddb85205f8dd887798502da6'
 
   head 'http://selenic.com/repo/hg', :using => :hg
 

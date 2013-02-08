@@ -2,10 +2,11 @@
 # Optionally, installs it too.
 
 require 'utils'
+require 'formula'
 
 def tap arg
   match = arg.match(%r[homebrew-(\w+)/])
-  match[1] if match
+  match[1].downcase if match
 end
 
 if ARGV.empty?
@@ -20,8 +21,7 @@ ARGV.named.each do|arg|
   if arg.to_i > 0
     url = 'https://github.com/mxcl/homebrew/pull/' + arg
   else
-    # This regex should work, if it's too precise, feel free to fix it.
-    url_match = arg.match 'https:\/\/github.com\/\w+\/homebrew(-\w+)?\/(pull\/(\d+)|commit\/\w{4,40})'
+    url_match = arg.match HOMEBREW_PULL_URL_REGEX
     unless url_match
       ohai 'Ignoring URL:', "Not a GitHub pull request or commit: #{arg}"
       next
@@ -31,7 +31,7 @@ ARGV.named.each do|arg|
   end
 
   if tap url
-    Dir.chdir HOMEBREW_REPOSITORY/"Library/Taps/homebrew-#{tap url}"
+    Dir.chdir HOMEBREW_REPOSITORY/"Library/Taps/#{url_match[1].downcase}-#{tap url}"
   else
     Dir.chdir HOMEBREW_REPOSITORY
   end
@@ -57,7 +57,7 @@ ARGV.named.each do|arg|
 
   safe_system 'git', *patch_args
 
-  issue = arg.to_i > 0 ? arg.to_i : url_match[3]
+  issue = arg.to_i > 0 ? arg.to_i : url_match[4]
   if issue and not ARGV.include? '--clean'
     ohai "Patch closes issue ##{issue}"
     message = `git log HEAD^.. --format=%B`
@@ -72,7 +72,7 @@ ARGV.named.each do|arg|
   end
 
   ohai 'Patch changed:'
-  safe_system 'git', 'diff', "#{revision}..", '--stat'
+  safe_system 'git', '--no-pager', 'diff', "#{revision}..", '--stat'
 
   if ARGV.include? '--install'
     `git diff #{revision}.. --name-status`.each_line do |line|
@@ -81,8 +81,8 @@ ARGV.named.each do|arg|
       if (status == 'A' or status == 'M') and filename.include? '/Formula/' or tap url
         formula = File.basename(filename, '.rb')
         ohai "Installing #{formula}"
-        # Not sure if this is the best way to install?
-        safe_system 'brew', 'install', '--force', '--build-bottle', formula
+        install = Formula.factory(formula).installed? ? 'upgrade' : 'install'
+        safe_system 'brew', install, '--debug', '--fresh', formula
       end
     end
   end
